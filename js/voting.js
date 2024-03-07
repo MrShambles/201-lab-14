@@ -1,55 +1,45 @@
 'use strict';
 
+document.addEventListener('DOMContentLoaded', function() {
+  appState.loadItems(); // Load or initialize products
+  displayProducts(); // Display products for voting
+});
 
-let votingRounds = 25;
-let productIndexArray = [];
+// Function to display products for voting
+function displayProducts() {
+  const productsContainer = document.querySelector('section'); // Adjust if necessary to match your HTML structure
+  productsContainer.innerHTML = ''; // Clear existing products (if any)
+  
+  // Assuming we're displaying three products at a time for voting
+  let displayedProducts = chooseRandomProducts(3);
 
-let imgElements = document.querySelectorAll('img');
-let imgContainer = document.querySelector('section');
+  displayedProducts.forEach(product => {
+    const imgElement = document.createElement('img');
+    imgElement.src = product.source;
+    imgElement.alt = product.name;
+    imgElement.title = product.name;
+    imgElement.addEventListener('click', () => handleVote(product.name));
+    productsContainer.appendChild(imgElement);
 
+    // Increment timesShown and save every time a product is displayed
+    product.timesShown++;
+  });
 
-let state = new AppState();
-state.loadItems();
-
-function generateRandomProduct() {
-  return Math.floor(Math.random() * state.allProducts.length);
+  appState.saveToLocalStorage(); // Save the state after updating views
 }
 
-function renderProductImages() {
-
-  while (productIndexArray.length < 6) {
-    let randomProductIndex = generateRandomProduct();
-    if (!productIndexArray.includes(randomProductIndex)) {
-      productIndexArray.push(randomProductIndex);
-    }
-  }
-
-  for (let i = 0; i < imgElements.length; i++) {
-    let randomIndex = productIndexArray.shift()
-
-    imgElements[i].src = state.allProducts[randomIndex].source
-    imgElements[i].title = state.allProducts[randomIndex].name
-    imgElements[i].alt = state.allProducts[randomIndex].name
-    state.allProducts[randomIndex].timesShown++;
-  }
-}
-
-function handleImageClick(event) {
-  let imageClicked = event.target.title;
-
-  for (let i = 0; i < state.allProducts.length; i++) {
-    if (imageClicked === state.allProducts[i].name) {
-      state.allProducts[i].timesClicked++;
-      votingRounds--;
-      renderProductImages();
-    }
-
-    if (votingRounds === 0) {
-      imgContainer.removeEventListener('click', handleImageClick);
-      state.saveToLocalStorage();
-    }
+// Function to handle voting for a product
+function handleVote(productName) {
+  const product = appState.allProducts.find(product => product.name === productName);
+  if (product) {
+    product.timesClicked += 1;
+    appState.saveToLocalStorage(); // Save every time a vote is recorded
+    displayProducts(); // Refresh the displayed products for continuous voting
   }
 }
 
-renderProductImages();
-imgContainer.addEventListener('click', handleImageClick);
+
+function chooseRandomProducts(count) {
+  let shuffled = appState.allProducts.sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+}
